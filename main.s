@@ -2,8 +2,10 @@
 	topoHeap:	.quad 0
 	inicioHeap: .quad 0
     X:  .quad 0
+
 .section .text
 .globl _start
+
 iniciaAlocador:
 	pushq		%rbp
     movq        %rsp, %rbp
@@ -18,22 +20,26 @@ iniciaAlocador:
     popq		%rbp
 	ret
 
+finalizaAlocador:
+	pushq		%rbp
+	movq		%rsp, %rbp
+
+	movq		inicioHeap, %rax
+	movq		%rax, %rdi
+	movq		$12, %rax
+	syscall
+
+	popq		%rbp
+	ret
+
 alocaMem:
     pushq       %rbp
     movq        %rsp, %rbp
 
+	movq		topoHeap, %rax
     movq        inicioHeap, %rbx
     cmpq        %rax, %rbx
     je          novoNodo
-
-    endAlocaMem:
-    # salva o endereço do inicio do bloco em rax
-    movq        topoHeap, %rax      # rax <- topoHeap
-    movq        16(%rbp), %rbx      # rbx <- num_bytes
-    subq        %rbx, %rax          # rax <- rax - rbx
-    
-    popq        %rbp
-    ret
 
     novoNodo:
     addq        16(%rbp), %rax      # rax <- num_bytes
@@ -54,13 +60,19 @@ alocaMem:
 
     jmp         endAlocaMem
 
+    endAlocaMem:
+    # salva o endereço do inicio do bloco em rax
+    movq        topoHeap, %rax      # rax <- topoHeap
+    movq        16(%rbp), %rbx      # rbx <- num_bytes
+    subq        %rbx, %rax          # rax <- rax - rbx
+    
+    popq        %rbp
+    ret
+
 _start:
 	call		iniciaAlocador
-    movq        %rax, %rbx
     
-    pushq       $100
-    call        alocaMem
-    movq        %rax, X
+	call		finalizaAlocador
 
 	movq		$60, %rax
 	movq		$0, %rdi
