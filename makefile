@@ -1,16 +1,15 @@
-OBJECTS = main.o 
+OBJECTS = main.o print.o
 
 all: main
 
 main: $(OBJECTS)
-	ld main.o -o main
+	ld main.o print.o -o main
 
 main.o: main.s
 	as main.s -o main.o -g
 
-print: print.s
-	as print.s -o print.o
-	ld print.o -o print
+print.o: print.s
+	as print.s -o print.o -g
 
 clean:
 	rm -f $(OBJECTS)
