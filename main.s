@@ -51,8 +51,9 @@ alocaMem:
 	ret								# retorna null se heap nao estiver vazia
 
     novoNodo:
-    addq        -8(%rbp), %rax      # rax <- num_bytes
+    movq        -8(%rbp), %rax      # rax <- num_bytes
     addq        $16, %rax           # soma 16 bytes de infos gerenciais
+	addq		topoHeap, %rax		# rax <- novo topo da heap
     movq        %rax, %rdi
     movq        $12, %rax
     syscall
@@ -63,7 +64,7 @@ alocaMem:
     movq        -8(%rbp), %rdx      # rdx <- num_bytes
     movq        %rdx, 8(%rax)		# salva o tamanho do bloco
 
-    movq        %rax, topoHeap      # atualiza o novo topo da heap
+    movq        %rbx, topoHeap      # atualiza o novo topo da heap
     jmp         endAlocaMem
 
     endAlocaMem:
@@ -76,11 +77,39 @@ alocaMem:
     popq        %rbp
     ret
 
+liberaMem:
+	pushq		%rbp
+	movq		%rsp, %rbp
+
+	movq		%rax, 16(%rbp)		# rax <- parametro *bloco (endereco do bloco)
+	subq		$16, %rax			# rax <- endereco da flag do bloco
+
+	movq		$0, (%rax)
+
+	popq		%rbp
+	ret
+
 _start:
 	call		iniciaAlocador
-    
+
+	pushq		$100
+	call		alocaMem
+	addq		$8, %rsp
+
+	cmpq		$0, %rax
+	movq		$1, %rdi			# define codigo de retorno 1 em caso de erro de alocacao
+	je			end					# salta para final do programa se alocaMem retornar zero
+
+	movq		%rax, X
+
+	pushq		X
+	call		liberaMem
+    addq		$8, %rsp
+
+	movq		$0, %rdi
+
+	end:
 	call		finalizaAlocador
 
 	movq		$60, %rax
-	movq		$0, %rdi
 	syscall
