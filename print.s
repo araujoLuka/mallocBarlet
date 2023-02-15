@@ -7,7 +7,9 @@
 	ini: .string "Inicio -> ["
 	top: .string "] <- Topo\n"
 .section .text
-.globl _start
+.globl printHeadder
+.globl printNodo
+.globl printFooter
 
 # printStr(char *s, long int qtde)
 printStr:
@@ -84,12 +86,13 @@ printFooter:
 	popq %rbp
 	ret
 
+# printNodo(long int flag, long int tam_bloco)
 printNodo:
 	pushq %rbp
 	movq %rsp, %rbp
 
 	pushq $1
-	movq 24(%rbp), %rax
+	movq 16(%rbp), %rax
 	cmpq $0, %rax
 	je pLivre
 	pOcup:
@@ -102,7 +105,7 @@ printNodo:
 	call printChar
 	addq $16, %rsp
 
-	movq 16(%rbp), %rax
+	movq 24(%rbp), %rax
 	pushq %rax
 	pushq $dta
 	call printChar
@@ -110,24 +113,3 @@ printNodo:
 
 	popq %rbp
 	ret
-
-_start:
-	call printHeadder
-
-	movq $0, %rax
-	pushq %rax
-	pushq $10
-	call printNodo
-	addq $16, %rsp
-
-	movq $1, %rax
-	pushq %rax
-	pushq $55
-	call printNodo
-	addq $16, %rsp
-
-	call printFooter
-
-	movq $60, %rax
-	movq $0, %rdi
-	syscall

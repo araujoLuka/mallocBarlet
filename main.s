@@ -69,7 +69,7 @@ alocaMem:
 	addq		topoHeap, %rax		# rax <- novo topo da heap
 	
 	cmpq		topoHeap, %rsp		# verifica se a heap atingiu a pilha
-	jg			pageFault
+	jle			pageFault
     
 	movq        %rax, %rdi
     movq        $12, %rax
@@ -104,7 +104,7 @@ liberaMem:
 	pushq		%rbp
 	movq		%rsp, %rbp
 
-	movq		%rax, 16(%rbp)		# rax <- parametro *bloco (endereco do bloco)
+	movq		16(%rbp), %rax		# rax <- parametro *bloco (endereco do bloco)
 	subq		$16, %rax			# rax <- endereco da flag do bloco
 
 	movq		$0, (%rax)
@@ -113,11 +113,38 @@ liberaMem:
 	ret
 
 imprimeMapa:
-    pushq %rbp
-    movq %rsp,%rbp
-    
-    popq %rbp
-    ret
+	pushq       %rbp
+	movq        %rsp, %rbp
+
+	call        printHeadder
+
+    subq        $8, %rsp            # abre espaco para variavel local
+	movq        inicioHeap, %rax    # rax <- inicioHeap
+    movq        %rax, 8(%rsp)       # inicia a variavel que caminha na heap com inicioHeap
+
+	loopMapa:
+    movq        8(%rsp), %rax
+    cmpq        topoHeap, %rax
+    jge         endLoop
+
+    pushq       8(%rax)             # parametro 2: tam_bloco
+    pushq       (%rax)              # parametro 1: flag de uso do bloco
+    call        printNodo
+    addq        $16, %rsp           # libera espaco na pilha
+
+    movq        8(%rsp), %rax
+    movq        8(%rax), %rbx       # rbx <- tam_bloco
+    addq        $16, %rbx           # rbx <- rbx + 16 (espaco infos gerenciais)
+    addq        %rbx, %rax          # avanca para o proximo bloco
+    movq        %rax, 8(%rsp)
+    jmp         loopMapa
+
+    endLoop:
+    addq        $8, %rsp
+	call        printFooter
+
+	popq        %rbp
+	ret
 
 _start:
 	subq        $8, %rsp			# abre espaco na pilha para variavel local y
