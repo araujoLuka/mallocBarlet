@@ -2,6 +2,7 @@
 	topoHeap:	.quad 0
 	inicioHeap: .quad 0
     x:  .quad 0
+	a:	.quad 0
 
 .section .text
 .globl _start
@@ -28,6 +29,7 @@ finalizaAlocador:
 	movq		%rax, %rdi
 	movq		$12, %rax
 	syscall
+	movq		%rax, topoHeap
 
 	popq		%rbp
 	ret
@@ -46,12 +48,12 @@ alocaMem:
     movq        inicioHeap, %rax
 	movq		16(%rbp), %rbx		# rbx <- num_bytes
 	loopBusca:
-	cmpq		%rax, topoHeap
+	cmpq		topoHeap, %rax
 	jge			novoNodo
 	cmpq		$0, (%rax)			# verifica se o bloco esta livre
 	jne			proxNodo
-	cmpq		%rbx, 8(%rax)		# verifica se o tamanho do bloco eh menor ou igual que num_bytes
-	jle			alocaNodo
+	cmpq		%rbx, 8(%rax)		# verifica se o tamanho do bloco eh maior ou igual que num_bytes
+	jge			alocaNodo
 	proxNodo:
 	addq		$16, %rax
 	addq		%rbx, %rax
@@ -90,7 +92,6 @@ alocaMem:
     movq        16(%rbp), %rdx      # rdx <- num_bytes
 
     movq        $1, (%rax)			# seta a flag de uso do bloco
-    movq        %rdx, 8(%rax)		# salva o tamanho do bloco
 
 	addq		$16, %rax			# rax <- endereco do inicio do bloco que sera retornado
     jmp         endAlocaMem
@@ -108,7 +109,15 @@ liberaMem:
 	subq		$16, %rax			# rax <- endereco da flag do bloco
 
 	movq		$0, (%rax)
+	
+	movq		8(%rax), %rbx
+	addq		$16, %rbx
+	addq		%rax, %rbx
+	cmpq		topoHeap, %rbx
+	jne			endLibera
+	movq		%rax, topoHeap
 
+	endLibera:
 	popq		%rbp
 	ret
 
@@ -147,9 +156,14 @@ imprimeMapa:
 	ret
 
 _start:
-	subq        $8, %rsp			# abre espaco na pilha para variavel local y
+	subq        $16, %rsp			# abre espaco na pilha para as variaveis locais
+	# a primeira variavel armazena o valor de retorno que sera usado ao fim do programa
+	movq		$0, 16(%rsp)		# 16(%rsp) = ret = 0
+	# a segunda variavel vai ser usada para armazenar a segunda alocacao na heap
+	movq		$0, 8(%rsp)			# 8(%rsp) = y = NULL
 
 	call		iniciaAlocador
+	call		imprimeMapa
 
 	# x(global) = alocaMem(32)
 	pushq		$32
@@ -157,12 +171,12 @@ _start:
 	addq		$8, %rsp
 
 	cmpq		$0, %rax
-	movq		$1, %rdi			# define codigo de retorno 1 em caso de erro de alocacao
+	movq		$1, 16(%rsp)		# define codigo de retorno 1 em caso de erro de alocacao
 	je			end					# salta para final do programa se alocaMem retornar zero
 
 	movq		%rax, x				# x <- endereco do bloco
 
-	call imprimeMapa
+	call		imprimeMapa
 
 	# y(local) = alocaMem(50)
 	pushq		$50
@@ -170,19 +184,19 @@ _start:
 	addq		$8, %rsp
 
 	cmpq		$0, %rax
-	movq		$1, %rdi			# define codigo de retorno 1 em caso de erro de alocacao
+	movq		$1, 16(%rsp)		# define codigo de retorno 1 em caso de erro de alocacao
 	je			end					# salta para final do programa se alocaMem retornar zero
 
 	movq		%rax, -8(%rsp)		# y <- endereco do bloco
 
-	call imprimeMapa
+	call		imprimeMapa
 
 	# liberaMem(x)
 	pushq		x
 	call		liberaMem
     addq		$8, %rsp
 
-	call imprimeMapa
+	call		imprimeMapa
 
 	# x(global) = alocaMem(15)
 	pushq		$15
@@ -190,16 +204,19 @@ _start:
 	addq		$8, %rsp
 
 	cmpq		$0, %rax
-	movq		$1, %rdi			# define codigo de retorno 1 em caso de erro de alocacao
+	movq		$1, 16(%rsp)		# define codigo de retorno 1 em caso de erro de alocacao
 	je			end					# salta para final do programa se alocaMem retornar zero
 
 	movq		%rax, x				# x <- endereco do bloco
 
-	movq		$0, %rdi
+	call		imprimeMapa
 
+	movq		$1, 16(%rsp)		# define codigo de retorno 0
 	end:
-	addq		$8, %rsp			# libera espaco da variavel local
+	addq		$16, %rsp			# libera espaco das variaveis locais
 	call		finalizaAlocador
+	call		imprimeMapa
 
+	movq		16(%rsp), %rdi		# rdi <- endereco de retorno do programa
 	movq		$60, %rax
 	syscall
