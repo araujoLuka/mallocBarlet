@@ -1,7 +1,7 @@
 .section .data
 	topoHeap:	.quad 0
 	inicioHeap: .quad 0
-    X:  .quad 0
+    x:  .quad 0
 
 .section .text
 .globl _start
@@ -89,10 +89,20 @@ liberaMem:
 	popq		%rbp
 	ret
 
+imprimeMapa:
+    pushq %rbp
+    movq %rsp,%rbp
+    
+    popq %rbp
+    ret
+
 _start:
+	subq        $8, %rsp			# abre espaco na pilha para variavel local y
+
 	call		iniciaAlocador
 
-	pushq		$100
+	# x(global) = alocaMem(32)
+	pushq		$32
 	call		alocaMem
 	addq		$8, %rsp
 
@@ -100,15 +110,45 @@ _start:
 	movq		$1, %rdi			# define codigo de retorno 1 em caso de erro de alocacao
 	je			end					# salta para final do programa se alocaMem retornar zero
 
-	movq		%rax, X
+	movq		%rax, x				# x <- endereco do bloco
 
-	pushq		X
+	call imprimeMapa
+
+	# y(local) = alocaMem(50)
+	pushq		$50
+	call		alocaMem
+	addq		$8, %rsp
+
+	cmpq		$0, %rax
+	movq		$1, %rdi			# define codigo de retorno 1 em caso de erro de alocacao
+	je			end					# salta para final do programa se alocaMem retornar zero
+
+	movq		%rax, -8(%rsp)		# y <- endereco do bloco
+
+	call imprimeMapa
+
+	# liberaMem(x)
+	pushq		x
 	call		liberaMem
     addq		$8, %rsp
+
+	call imprimeMapa
+
+	# x(global) = alocaMem(15)
+	pushq		$15
+	call		alocaMem
+	addq		$8, %rsp
+
+	cmpq		$0, %rax
+	movq		$1, %rdi			# define codigo de retorno 1 em caso de erro de alocacao
+	je			end					# salta para final do programa se alocaMem retornar zero
+
+	movq		%rax, x				# x <- endereco do bloco
 
 	movq		$0, %rdi
 
 	end:
+	addq		$8, %rsp			# libera espaco da variavel local
 	call		finalizaAlocador
 
 	movq		$60, %rax
