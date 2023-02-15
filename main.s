@@ -36,44 +36,67 @@ alocaMem:
     pushq       %rbp
     movq        %rsp, %rbp
 
-	subq		$8, %rsp
-	movq		16(%rbp), %rax
-	movq		%rax, -8(%rbp)		# salva num_bytes em uma variavel local
-
-	movq		topoHeap, %rax
-    movq        inicioHeap, %rbx
+    movq        inicioHeap, %rax
+	movq		topoHeap, %rbx
     cmpq        %rax, %rbx
-    je          novoNodo
+    je          novoNodo			# gera um novo nodo se a heap estiver vazia
 
-	addq		$8, %rsp
+	# busca um nodo com um bloco de tamanho menor ou igual a num_bytes
+	buscaNodo:
+    movq        inicioHeap, %rax
+	movq		16(%rbp), %rbx		# rbx <- num_bytes
+	loopBusca:
+	cmpq		%rax, topoHeap
+	jge			novoNodo
+	cmpq		$0, (%rax)			# verifica se o bloco esta livre
+	jne			proxNodo
+	cmpq		%rbx, 8(%rax)		# verifica se o tamanho do bloco eh menor ou igual que num_bytes
+	jle			alocaNodo
+	proxNodo:
+	addq		$16, %rax
+	addq		%rbx, %rax
+	jmp			loopBusca
+
+	pageFault:
 	movq		$0, %rax
 	popq		%rbp
-	ret								# retorna null se heap nao estiver vazia
+	ret								# retorna null se heap atingir a pilha
 
+	# aloca um novo nodo e atualiza o topo da heap
     novoNodo:
-    movq        -8(%rbp), %rax      # rax <- num_bytes
+    movq        16(%rbp), %rax      # rax <- num_bytes
     addq        $16, %rax           # soma 16 bytes de infos gerenciais
 	addq		topoHeap, %rax		# rax <- novo topo da heap
-    movq        %rax, %rdi
+	
+	cmpq		topoHeap, %rsp		# verifica se a heap atingiu a pilha
+	jg			pageFault
+    
+	movq        %rax, %rdi
     movq        $12, %rax
     syscall
-    
+
 	movq		%rax, %rbx			# rbx <- topo corrente da heap
     movq        topoHeap, %rax      # rax <- recebe antigo topo da heap
     movq        $1, (%rax)			# seta a flag de uso do bloco
-    movq        -8(%rbp), %rdx      # rdx <- num_bytes
+    movq        16(%rbp), %rdx      # rdx <- num_bytes
     movq        %rdx, 8(%rax)		# salva o tamanho do bloco
-
     movq        %rbx, topoHeap      # atualiza o novo topo da heap
+	
+	addq		$16, %rax			# rax <- endereco do inicio do bloco que sera retornado
     jmp         endAlocaMem
 
-    endAlocaMem:
-    movq        topoHeap, %rax      # rax <- topoHeap
-    movq        -8(%rbp), %rbx      # rbx <- num_bytes
-    subq        %rbx, %rax			# salva o endereço do inicio do bloco para retorno
-    
-    addq        $8, %rsp            # libera espaco da pilha
+	# aloca o bloco em um nodo ja existente com o endereco em %rax
+	alocaNodo:
+    movq        16(%rbp), %rdx      # rdx <- num_bytes
 
+    movq        $1, (%rax)			# seta a flag de uso do bloco
+    movq        %rdx, 8(%rax)		# salva o tamanho do bloco
+
+	addq		$16, %rax			# rax <- endereco do inicio do bloco que sera retornado
+    jmp         endAlocaMem
+
+	# rax contem o endereco do bloco que sera retornado
+    endAlocaMem:
     popq        %rbp
     ret
 
