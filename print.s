@@ -3,20 +3,37 @@
 	lvr: .string "-"
 	dta: .string "#"
 	nln: .string "\n"
-	msg: .string "Hello World\n"
+	msg: .string "* Mapa da Heap *\n\n"
+	ini: .string "Inicio -> ["
+	top: .string "] <- Topo\n"
 .section .text
 .globl _start
 
+# printStr(char *s, long int qtde)
+printStr:
+	pushq %rbp
+	movq %rsp, %rbp
+
+	movq 16(%rbp), %rsi	# rsi <- string a ser impressa
+	movq 24(%rbp), %rdx	# rdx <- quantidade de caracteres
+	movq $1, %rax		# codigo para syscall write
+	movq $1, %rdi		# imprime em stdout
+	syscall
+
+	popq %rbp
+	ret
+
+# printChar(char *c, long int repet)
 printChar:
 	pushq %rbp
 	movq %rsp, %rbp
 
-	movq 24(%rbp), %rbx
-	movq 16(%rbp), %rsi
-	movq $1, %rdx
-	
-	movq $1, %rax
-	movq $1, %rdi	# stdout
+	movq 16(%rbp), %rsi	# rsi <- char a ser impresso
+	movq 24(%rbp), %rbx	# rbx <- repet (quantas vezes imprimir o char)
+	movq $1, %rax		# codigo para syscall write
+	movq $1, %rdi		# imprime em stdout
+	movq $1, %rdx		# um caractere a imprimir
+
 	while:
 	cmpq $0, %rbx
 	jle end_print
@@ -28,37 +45,88 @@ printChar:
 	popq %rbp
 	ret
 
-_start:
-	movq $1, %rax
-	movq $1, %rdi	# stdout
-	movq $msg, %rsi
-	movq $12, %rdx
-	syscall
+printHeadder:
+	pushq %rbp
+	movq %rsp, %rbp
 
-	pushq $1
+	pushq $18
+	pushq $msg
+	call printStr
+	addq $16, %rsp
+
+	pushq $11
+	pushq $ini
+	call printStr
+	addq $16, %rsp
+
+	popq %rbp
+	ret
+
+printFooter:
+	pushq %rbp
+	movq %rsp, %rbp
+
+	pushq $10
+	pushq $top
+	call printStr
+	addq $16, %rsp
+
+	pushq $100
 	pushq $lvr
 	call printChar
-	addq $8, %rsp
-
-	pushq $30
-	pushq $dta
-	call printChar
-	addq $8, %rsp
-
-	pushq $1
-	pushq $ocp
-	call printChar
-	addq $8, %rsp
-
-	pushq $50
-	pushq $dta
-	call printChar
-	addq $8, %rsp
+	addq $16, %rsp
 
 	pushq $1
 	pushq $nln
 	call printChar
-	addq $8, %rsp
+	addq $16, %rsp
+
+	popq %rbp
+	ret
+
+printNodo:
+	pushq %rbp
+	movq %rsp, %rbp
+
+	pushq $1
+	movq 24(%rbp), %rax
+	cmpq $0, %rax
+	je pLivre
+	pOcup:
+		pushq $ocp
+		jmp printCall
+	pLivre:
+		pushq $lvr
+	
+	printCall:
+	call printChar
+	addq $16, %rsp
+
+	movq 16(%rbp), %rax
+	pushq %rax
+	pushq $dta
+	call printChar
+	addq $16, %rsp
+
+	popq %rbp
+	ret
+
+_start:
+	call printHeadder
+
+	movq $0, %rax
+	pushq %rax
+	pushq $10
+	call printNodo
+	addq $16, %rsp
+
+	movq $1, %rax
+	pushq %rax
+	pushq $55
+	call printNodo
+	addq $16, %rsp
+
+	call printFooter
 
 	movq $60, %rax
 	movq $0, %rdi
