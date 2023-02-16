@@ -92,24 +92,40 @@ printNodo:
 	pushq %rbp
 	movq %rsp, %rbp
 
-	pushq $1
 	movq 16(%rbp), %rax
+    cmpq $2, %rax
+    je pSemAloc
 	cmpq $0, %rax
 	je pLivre
 	pOcup:
+        pushq $8
+        pushq $dta
+        call printChar
+        addq $16, %rsp
+
+        movq 24(%rbp), %rax
+        pushq %rax
 		pushq $ocp
 		jmp printCall
+
 	pLivre:
+        pushq $8
+        pushq $dta
+        call printChar
+        addq $16, %rsp
+
+        movq 24(%rbp), %rax
+        pushq %rax
+		pushq $lvr
+		jmp printCall
+
+    pSemAloc:
+        movq 24(%rbp), %rax
+        addq $16, %rax
+        pushq %rax
 		pushq $lvr
 	
 	printCall:
-	call printChar
-	addq $16, %rsp
-
-	movq 24(%rbp), %rax
-    sar %rax
-	pushq %rax
-	pushq $dta
 	call printChar
 	addq $16, %rsp
 

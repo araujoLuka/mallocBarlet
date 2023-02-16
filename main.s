@@ -73,11 +73,11 @@ alocaMem:
     addq tamBloco, %rbx
     cmpq $0, %rax
     jg loopBloco
-
+    
     movq %rbx, %rax             # rax <- tamanho do bloco a alocar
     addq $16, %rax              # soma 16 bytes de infos gerenciais
     addq topoHeap, %rax         # rax <- novo topo da heap
-    
+
     movq %rax, %rdi
     movq $12, %rax
     syscall
@@ -85,11 +85,18 @@ alocaMem:
     movq %rax, %rdx             # rdx <- topo corrente da heap
     movq topoHeap, %rax         # rax <- recebe antigo topo da heap
     movq $1, (%rax)             # seta a flag de uso do bloco
-    movq 16(%rbp), %rbx         # rbx <- num_bytes
-    movq %rbx, 8(%rax)          # salva o tamanho do bloco
+    movq 16(%rbp), %rcx         # rcx <- num_bytes
+    movq %rcx, 8(%rax)          # salva o tamanho do bloco
     movq %rdx, topoHeap         # atualiza o novo topo da heap
     
     addq $16, %rax              # rax <- endereco do inicio do bloco que sera retornado
+    movq %rax, %rdx
+    addq %rcx, %rdx
+    movq $2, (%rdx)             # seta que o restante do bloco esta livre
+    subq %rcx, %rbx
+    subq $16, %rbx
+    movq %rbx, 8(%rdx)          # salva o total de bytes restantes do bloco
+
     jmp endAlocaMem
 
     # aloca o bloco em um nodo ja existente com o endereco em %rax
