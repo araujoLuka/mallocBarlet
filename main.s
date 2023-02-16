@@ -55,13 +55,15 @@ alocaMem:
     loopBusca:
     cmpq topoHeap, %rax
     jge novoNodo
-    cmpq $0, (%rax)             # verifica se o bloco esta livre
-    jne proxNodo
-    cmpq %rbx, 8(%rax)          # verifica se o tamanho do bloco eh maior ou igual que num_bytes
-    jge alocaNodo
+    movq (%rax), %rdi
+    cmpq $1, %rdi               # verifica se o bloco esta ocupado
+    je proxNodo
+    movq 8(%rax), %rdi
+    cmpq %rbx, %rdi             # verifica se o tamanho do bloco eh maior ou igual que num_bytes
+    jge verificaBloco
     proxNodo:
+    addq 8(%rax), %rax
     addq $16, %rax
-    addq %rbx, %rax
     jmp loopBusca
 
     # aloca um novo nodo e atualiza o topo da heap
@@ -75,7 +77,6 @@ alocaMem:
     jg loopBloco
     
     movq %rbx, %rax             # rax <- tamanho do bloco a alocar
-    addq $16, %rax              # soma 16 bytes de infos gerenciais
     addq topoHeap, %rax         # rax <- novo topo da heap
 
     movq %rax, %rdi
@@ -89,6 +90,39 @@ alocaMem:
     movq %rcx, 8(%rax)          # salva o tamanho do bloco
     movq %rdx, topoHeap         # atualiza o novo topo da heap
     
+    jmp ajustaBloco
+
+    verificaBloco:
+    cmpq %rax, topoBloco
+    jne alocaNodo
+    movq 8(%rax), %rbx
+    movq 16(%rbp), %rdi
+    addq $16, topoBloco
+    addq %rdi, topoBloco
+    movq topoBloco, %rdx
+    movq $2, (%rdx)
+    subq %rdi, %rbx
+    subq $16, %rbx
+    movq %rbx, 8(%rdx)
+    movq %rdx, topoBloco        # salva o endereco do topo do bloco
+
+    # aloca o bloco em um nodo ja existente com o endereco em %rax
+    alocaNodo:
+    movq 16(%rbp), %rdx         # rdx <- num_bytes
+
+    movq $1, (%rax)             # seta a flag de uso do bloco
+    movq 8(%rax), %rdi
+    movq %rdx, 8(%rax)
+    addq $16, %rax              # rax <- endereco do inicio do bloco que sera retornado
+    movq %rax, %rbx
+    addq %rdx, %rbx
+    movq $2, (%rbx)
+    subq %rdx, %rdi
+    subq $16, %rdi
+    movq %rdi, 8(%rbx)
+    jmp endAlocaMem
+
+    ajustaBloco:
     addq $16, %rax              # rax <- endereco do inicio do bloco que sera retornado
     movq %rax, %rdx
     addq %rcx, %rdx
@@ -96,16 +130,7 @@ alocaMem:
     subq %rcx, %rbx
     subq $16, %rbx
     movq %rbx, 8(%rdx)          # salva o total de bytes restantes do bloco
-
-    jmp endAlocaMem
-
-    # aloca o bloco em um nodo ja existente com o endereco em %rax
-    alocaNodo:
-    movq 16(%rbp), %rdx         # rdx <- num_bytes
-
-    movq $1, (%rax)             # seta a flag de uso do bloco
-
-    addq $16, %rax              # rax <- endereco do inicio do bloco que sera retornado
+    movq %rdx, topoBloco        # salva o endereco do topo do bloco
     jmp endAlocaMem
 
     # rax contem o endereco do bloco que sera retornado

@@ -98,7 +98,7 @@ printNodo:
 	cmpq $0, %rax
 	je pLivre
 	pOcup:
-        pushq $8
+        pushq $16
         pushq $dta
         call printChar
         addq $16, %rsp
@@ -109,7 +109,7 @@ printNodo:
 		jmp printCall
 
 	pLivre:
-        pushq $8
+        pushq $16
         pushq $dta
         call printChar
         addq $16, %rsp
