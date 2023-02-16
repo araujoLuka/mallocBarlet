@@ -2,6 +2,7 @@
 	ocp: .string "+"
 	lvr: .string "-"
 	dta: .string "#"
+    wll: .string "_"
 	nln: .string "\n"
 	msg: .string "* Mapa da Heap *\n\n"
 	ini: .string "Inicio -> ["
@@ -73,12 +74,12 @@ printFooter:
 	call printStr
 	addq $16, %rsp
 
-	pushq $100
-	pushq $lvr
+	pushq $150
+	pushq $wll
 	call printChar
 	addq $16, %rsp
 
-	pushq $1
+	pushq $2
 	pushq $nln
 	call printChar
 	addq $16, %rsp
@@ -106,6 +107,7 @@ printNodo:
 	addq $16, %rsp
 
 	movq 24(%rbp), %rax
+    sar %rax
 	pushq %rax
 	pushq $dta
 	call printChar
