@@ -1,9 +1,10 @@
 OBJECTS = main.o print.o
+EXE = avalia
 
 all: main
 
 main: $(OBJECTS)
-	ld main.o print.o -o main
+	ld main.o print.o -o $(EXE)
 
 main.o: main.s
 	as main.s -o main.o -g

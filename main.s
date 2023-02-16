@@ -3,8 +3,11 @@
     topoHeap:   .quad 0
     topoBloco:  .quad 0
     tamBloco:   .quad 0
-    x: .quad 0
     a: .quad 0
+    b: .quad 0
+    c: .quad 0
+    d: .quad 0
+    e: .quad 0
 
 .section .text
 .globl _start
@@ -151,8 +154,19 @@ liberaMem:
     addq $16, %rbx
     addq %rax, %rbx
     cmpq topoHeap, %rbx
-    jne endLibera
+    je atualizaTopo
+    je desfragmenta
+    jmp endLibera
+
+    desfragmenta:
+    jmp endLibera
+
+    atualizaTopo:
     movq %rax, topoHeap
+    movq %rax, %rdi
+    movq $12, %rax
+    syscall
+    jmp endLibera
 
     endLibera:
     popq %rbp
@@ -204,57 +218,118 @@ _start:
     call iniciaAlocador
     call imprimeMapa
 
-    # x(global) = alocaMem(32)
-    pushq $32
+    # a = alocaMem(100)
+    pushq $100
     call alocaMem
     addq $8, %rsp
-
-    cmpq $0, %rax
-    movq $1, 16(%rsp)           # define codigo de retorno 1 em caso de erro de alocacao
-    je end                      # salta para final do programa se alocaMem retornar zero
-
-    movq %rax, x                # x <- endereco do bloco
+    movq %rax, a                # a <- endereco do bloco
 
     call imprimeMapa
 
-    # y(local) = alocaMem(50)
-    pushq $50
+    # b = alocaMem(130)
+    pushq $130
     call alocaMem
     addq $8, %rsp
-
-    cmpq $0, %rax
-    movq $1, 16(%rsp)           # define codigo de retorno 1 em caso de erro de alocacao
-    je end                      # salta para final do programa se alocaMem retornar zero
-
-    movq %rax, -8(%rsp)         # y <- endereco do bloco
+    movq %rax, b                # b <- endereco do bloco
 
     call imprimeMapa
 
-    # liberaMem(x)
-    pushq x
+    # c = alocaMem(120)
+    pushq $100
+    call alocaMem
+    addq $8, %rsp
+    movq %rax, c                # c <- endereco do bloco
+
+    call imprimeMapa
+
+    # d = alocaMem(110)
+    pushq $110
+    call alocaMem
+    addq $8, %rsp
+    movq %rax, d                # d <- endereco do bloco
+
+    call imprimeMapa
+
+
+    # liberaMem(b)
+    pushq b
     call liberaMem
     addq $8, %rsp
 
     call imprimeMapa
 
-    # x(global) = alocaMem(15)
-    pushq $15
-    call alocaMem
+    # liberaMem(d)
+    pushq d
+    call liberaMem
     addq $8, %rsp
 
-    cmpq $0, %rax
-    movq $1, 16(%rsp)           # define codigo de retorno 1 em caso de erro de alocacao
-    je end                      # salta para final do programa se alocaMem retornar zero
+    call imprimeMapa
 
-    movq %rax, x                # x <- endereco do bloco
+
+    # b = alocaMem(50)
+    pushq $50
+    call alocaMem
+    addq $8, %rsp
+    movq %rax, b                # b <- endereco do bloco
 
     call imprimeMapa
+
+    # d = alocaMem(90)
+    pushq $90
+    call alocaMem
+    addq $8, %rsp
+    movq %rax, d                # d <- endereco do bloco
+
+    call imprimeMapa
+
+    # e = alocaMem(40)
+    pushq $40
+    call alocaMem
+    addq $8, %rsp
+    movq %rax, e                # e <- endereco do bloco
+
+    call imprimeMapa
+
+    # liberaMem(c)
+    pushq c
+    call liberaMem
+    addq $8, %rsp
+
+    call imprimeMapa
+
+    # liberaMem(a)
+    pushq a
+    call liberaMem
+    addq $8, %rsp
+
+    call imprimeMapa
+
+    # liberaMem(b)
+    pushq b
+    call liberaMem
+    addq $8, %rsp
+
+    call imprimeMapa
+
+    # liberaMem(d)
+    pushq d
+    call liberaMem
+    addq $8, %rsp
+
+    call imprimeMapa
+
+    # liberaMem(e)
+    pushq e
+    call liberaMem
+    addq $8, %rsp
+
+    call imprimeMapa
+
 
     movq $1, 16(%rsp)           # define codigo de retorno 0
     end:
     addq $16, %rsp	            # libera espaco das variaveis locais
     call finalizaAlocador
-    call imprimeMapa
 
     movq 16(%rsp), %rdi	        # rdi <- endereco de retorno do programa
     movq $60, %rax
