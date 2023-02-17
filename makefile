@@ -4,7 +4,7 @@ EXE = avalia
 all: main
 
 main: $(OBJECTS)
-	ld main.o print.o -o $(EXE)
+	ld $(OBJECTS) -o $(EXE)
 
 main.o: main.s
 	as main.s -o main.o -g
@@ -16,7 +16,7 @@ clean:
 	rm -f $(OBJECTS)
 
 purge:
-	rm -f main
+	rm -f $(EXE)
 
 run:
 	./main
