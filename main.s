@@ -145,28 +145,42 @@ liberaMem:
     pushq %rbp
     movq %rsp, %rbp
 
-    movq 16(%rbp), %rax         # rax <- parametro *bloco (endereco do bloco)
-    subq $16, %rax              # rax <- endereco da flag do bloco
+    movq 16(%rbp), %rax         # rax <- parametro *bloco (endereco do nodo)
+    subq $16, %rax              # rax <- endereco da flag do nodo
 
     movq $0, (%rax)
     
-    movq 8(%rax), %rbx
-    addq $16, %rbx
-    addq %rax, %rbx
-    cmpq topoHeap, %rbx
-    je atualizaTopo
-    je desfragmenta
-    jmp endLibera
+	loopLibera:
+		movq 8(%rax), %rbx
+		addq $16, %rbx
+		addq %rax, %rbx				# rbx <- endereco do prox nodo
 
-    desfragmenta:
-    jmp endLibera
+		cmpq topoBloco, %rbx		# verifica se o endereco do prox nodo eh o topo do bloco
+		je atualizaTopoBloco
 
-    atualizaTopo:
-    movq %rax, topoHeap
-    movq %rax, %rdi
-    movq $12, %rax
-    syscall
-    jmp endLibera
+		verificaFragmentacao:
+			cmpq $1, (%rbx)
+			jne desfragmenta
+			jmp endLibera
+
+		desfragmenta:
+			movq 8(%rbx), %rdx			# rdx <- tamanho do prox nodo
+			addq $16, %rdx				# soma 16 bytes gerenciais em rdx
+			movq 8(%rax), %rcx			# rcx <- tamanho do nodo atual
+			addq %rdx, %rcx				# rcx <- novo tamanho do nodo
+			movq %rcx, 8(%rax)
+			jmp loopLibera
+
+		atualizaTopoBloco:
+			movq topoBloco, %rbx
+			movq 8(%rbx), %rbx
+			addq $16, %rbx
+
+			movq $2, (%rax)
+			addq %rbx, 8(%rax)
+
+			movq %rax, topoBloco
+			jmp endLibera
 
     endLibera:
     popq %rbp
@@ -183,21 +197,21 @@ imprimeMapa:
     movq %rax, 8(%rsp)          # inicia a variavel que caminha na heap com inicioHeap
 
     loopMapa:
-    movq 8(%rsp), %rax
-    cmpq topoHeap, %rax
-    jge endLoop
+		movq 8(%rsp), %rax
+		cmpq topoHeap, %rax
+		jge endLoop
 
-    pushq 8(%rax)               # parametro 2: tam_bloco
-    pushq (%rax)                # parametro 1: flag de uso do bloco
-    call printNodo
-    addq $16, %rsp              # libera espaco na pilha
+		pushq 8(%rax)               # parametro 2: tam_bloco
+		pushq (%rax)                # parametro 1: flag de uso do bloco
+		call printNodo
+		addq $16, %rsp              # libera espaco na pilha
 
-    movq 8(%rsp), %rax
-    movq 8(%rax), %rbx          # rbx <- tam_bloco
-    addq $16, %rbx              # rbx <- rbx + 16 (espaco infos gerenciais)
-    addq %rbx, %rax             # avanca para o proximo bloco
-    movq %rax, 8(%rsp)
-    jmp loopMapa
+		movq 8(%rsp), %rax
+		movq 8(%rax), %rbx          # rbx <- tam_bloco
+		addq $16, %rbx              # rbx <- rbx + 16 (espaco infos gerenciais)
+		addq %rbx, %rax             # avanca para o proximo bloco
+		movq %rax, 8(%rsp)
+		jmp loopMapa
 
     endLoop:
     addq $8, %rsp
